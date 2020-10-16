@@ -66,7 +66,7 @@ done
 
 printf "Updating version to %s...\n" "${semver}" >&2
 
-sed -i -e "s;VERSION=.*;VERSION=v${semver};g" Makefile .github/workflows/release.yml
+sed -i -e "s;^VERSION=.*;^VERSION=v${semver};g" Makefile .github/workflows/release.yml
 
 make package
 
