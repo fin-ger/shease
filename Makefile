@@ -1,5 +1,5 @@
 PREFIX ?= /usr
-SEMVER=v0.0.0
+SEMVER=v0.1.0
 
 .PHONY: check build package clean install uninstall release dev-install dev-uninstall
 
