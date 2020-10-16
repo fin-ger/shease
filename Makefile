@@ -1,5 +1,5 @@
 PREFIX ?= /usr
-VERSION=v0.1.0
+VERSION=v0.0.0
 
 .PHONY: check build package clean install uninstall release dev-install dev-uninstall
 
