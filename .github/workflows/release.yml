@@ -37,9 +37,9 @@ jobs:
       id: shease-tgz
       run: |
         SEMVER=v0.1.0
-        echo "::set-output name=version::${SEMVER}"
+        echo ::set-output "name=version::${SEMVER:1}"
         make package
-        cp "package/shease-${SEMVER}.zip" "${GITHUB_WORKSPACE}/shease-${SEMVER}.tgz"
+        cp "package/shease-${SEMVER:1}.zip" "${GITHUB_WORKSPACE}/shease-${SEMVER:1}.tgz"
     - name: Load Release URL File from release job
       uses: actions/download-artifact@v1
       with:
