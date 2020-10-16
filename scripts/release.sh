@@ -72,7 +72,7 @@ make package
 
 git add -A
 git commit -s -m "(make-release) Update version from ${old_version} to ${semver}"
-git push origin master:master
+git push origin main:main
 
 git tag -sm "Update version to ${semver}" "v${semver}"
 git push --tags
