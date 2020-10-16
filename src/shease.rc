@@ -1706,7 +1706,7 @@ ease_in_out_bounce
     for func in ${easing_functions}
     do
         rm -f "/tmp/__shease__${func}"
-        nseq 0.03 | "${func}" | iscale 0 "${width}" | \
+        nseq 0.01 | "${func}" | iscale 0 "${width}" | \
             __shease__dot "${padding}" "${terminal_width}" \
                           > "/tmp/__shease__${func}"
         echo "/tmp/__shease__${func}"
