@@ -36,10 +36,10 @@ jobs:
     - name: Release Shease Tarball
       id: shease-tgz
       run: |
-        VERSION=v0.1.0
-        echo "::set-output name=version::$VERSION"
+        SEMVER=v0.1.0
+        echo "::set-output name=version::${SEMVER}"
         make package
-        cp "package/shease-${VERSION}.zip" "${GITHUB_WORKSPACE}/shease-${VERSION}.tgz"
+        cp "package/shease-${SEMVER}.zip" "${GITHUB_WORKSPACE}/shease-${SEMVER}.tgz"
     - name: Load Release URL File from release job
       uses: actions/download-artifact@v1
       with:
