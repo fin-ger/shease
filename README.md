@@ -26,7 +26,7 @@
 
 
 
-## How does it look like? `demo` [![terminalizer](https://img.shields.io/badge/GIF-terminalizer-blueviolet.svg)](https://github.com/faressoft/terminalizer)
+## How does it look like?
 
 <details>
   <summary>Expand to view</summary>

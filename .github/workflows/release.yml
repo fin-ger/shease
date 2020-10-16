@@ -8,7 +8,7 @@ name: release build
 jobs:
   release:
     name: Create Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - name: Create Release
       id: create_release
@@ -30,7 +30,7 @@ jobs:
   create-tarball:
     name: Create Shease Release Tarball
     needs: release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v1
     - name: Release Shease Tarball
