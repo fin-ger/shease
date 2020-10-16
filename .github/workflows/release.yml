@@ -1,0 +1,61 @@
+on:
+  push:
+    tags:
+    - 'v*'
+
+name: release build
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1.0.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+    - name: Output Release URL File
+      run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url
+    - name: Save Release URL File for publish
+      uses: actions/upload-artifact@v1
+      with:
+        name: release_url
+        path: release_url
+  create-tarball:
+    name: Create Shease Release Tarball
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Release Shease Tarball
+      id: shease-tgz
+      run: |
+        VERSION=0.1.0
+        echo "::set-output name=version::$VERSION"
+        make package
+        cp "package/shease-${VERSION}.zip" "${GITHUB_WORKSPACE}/shease-${VERSION}.tgz"
+    - name: Load Release URL File from release job
+      uses: actions/download-artifact@v1
+      with:
+        name: release_url
+    - name: Get Release File Name & Upload URL
+      id: get_release_info
+      run: |
+        value="$(cat release_url/release_url)"
+        echo ::set-output "name=upload_url::${value}"
+    - name: Upload Shease Release Assets
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+        asset_path: shease-${{ steps.shease-tgz.outputs.version }}.tgz
+        asset_name: shease-${{ steps.shease-tgz.outputs.version }}.tgz
+        asset_content_type: application/gzip

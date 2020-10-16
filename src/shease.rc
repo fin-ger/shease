@@ -1,0 +1,1723 @@
+#!/bin/sh
+
+# Helper function to check existence of parameters.
+__shease__check_param() {
+    idx=1
+    for arg in "$@"
+    do
+        if [ -z "${arg:-}" ]
+        then
+            return "${idx}"
+        fi
+        idx=$((idx + 1))
+    done
+}
+
+# Generate normalized decimal numbers
+#
+# Create a normalized decimal number sequence (from 0 to 1) with given step
+# size.
+#
+# Parameters:
+#   1 - step size (e.g. 0.1)
+#
+# stdin:
+#   Ignored.
+#
+# stdout:
+#   Lines containing single decimals between 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   1 - first parameter missing
+#
+# Aliases:
+#   nseq
+nseq() {
+    __shease__check_param "${1:-}" || return $?
+    bc -l <<EOF
+    if ($1 < 0) {
+      x = 1;
+      while (x > 0) {
+        x;
+        x += $1;
+      }
+      0;
+    } else {
+      x = 0;
+      while (x < 1) {
+        x;
+        x += $1;
+      }
+      1;
+    }
+EOF
+}
+
+# Scale normalized decimals to an integer range
+#
+# Transform normalized decimal numbers (from 0 to 1) from stdin into a
+# different integer number space. The space is defined by the provided minimum
+# and maximum. Some may call this operation "scaling".
+#
+# Parameters:
+#   1 - minimum value
+#   2 - maximum value
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single integer between 'minimum' and 'maximum'.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   1 - first parameter missing
+#   2 - second parameter missing
+#
+# Aliases:
+#   iscale
+iscale() {
+    __shease__check_param "${1:-}" "${2:-}" || return $?
+    awk "
+    BEGIN { min = $1; max = $2 }
+    { print int(\$1 * (max - min) + min) }
+    "
+}
+
+# Scale normalized decimals to a decimal range
+#
+# Transform normalized decimal numbers (from 0 to 1) from stdin into a
+# different decimal number space. The space is defined by the provided minimum
+# and maximum. Some may call this operation "scaling".
+#
+# Parameters:
+#   1 - minimum value
+#   2 - maximum value
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single decimal between 'minimum' and 'maximum'.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   1 - first parameter missing
+#   2 - second parameter missing
+#
+# Aliases:
+#   dscale
+#   fscale
+dscale() {
+    __shease__check_param "${1:-}" "${2:-}" || return $?
+    awk "
+    BEGIN { min = $1; max = $2 }
+    { print \$1 * (max - min) + min }
+    "
+}
+alias fscale=dscale
+
+# Do a linear interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a linear
+# interpolation function. This is essentially a pass-through of all numbers.
+#
+# |                              x
+# | x                         xx*
+# |                        xx*
+# |                     xx*
+# |                  xx*
+# |               xx*
+# |            xx*
+# |         xx*
+# |      xx*
+# |   xx*                       t
+# |xx*____________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_linear
+#   ease-linear
+ease_linear() {
+    awk '{
+      print $1;
+    }'
+}
+alias ease-linear="ease_linear"
+
+# Do a sine-in interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a sine-in
+# interpolation function.
+#
+# |                              x*
+# | x                          x*
+# |                          x*
+# |                        x*
+# |                      x*
+# |                    x*
+# |                  x*
+# |               x**
+# |           xx**
+# |       xxx*                  t
+# |xxxxxx*________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_sine
+#   ease-in-sine
+ease_in_sine() {
+    awk '
+    BEGIN { pi = atan2(0, -1); }
+    { print 1 - cos(($1 * pi) / 2); }
+    '
+}
+alias ease-in-sine="ease_in_sine"
+
+# Do a sine-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a sine-out
+# interpolation function.
+#
+# |                         xxxxxx
+# | x                   xxx*
+# |                 xxx*
+# |              xx*
+# |            x*
+# |         xx*
+# |       xx
+# |     x*
+# |   x*
+# | x*                          t
+# |x______________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_out_sine
+#   ease-out-sine
+ease_out_sine() {
+    awk '
+    BEGIN { pi = atan2(0, -1); }
+    { print sin(($1 * pi) / 2); }
+    '
+}
+alias ease-out-sine="ease_out_sine"
+
+# Do a sine-in-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a sine-in-out
+# interpolation function.
+#
+# |                           xxxx
+# | x                      xx*
+# |                     xx*
+# |                   x*
+# |                 x*
+# |               x*
+# |             x*
+# |           x*
+# |        xx*
+# |     xx*                     t
+# |xx***__________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_out_sine
+#   ease-in-out-sine
+ease_in_out_sine() {
+    awk '
+    BEGIN { pi = atan2(0, -1); }
+    { print -(cos(pi * $1) - 1) / 2; }
+    '
+}
+alias ease-in-out-sine="ease_in_out_sine"
+
+# Do a quad-in interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a quad-in
+# interpolation function.
+#
+# |                              x
+# | x                           x
+# |                           xx
+# |                         xx
+# |                       xx
+# |                     xx
+# |                   xx
+# |                xx*
+# |             xx*
+# |        xxxx*                t
+# |xxxxxx**_______________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_quad
+#   ease-in-quad
+ease_in_quad() {
+    awk '{
+      print $1 * $1;
+    }'
+}
+alias ease-in-quad="ease_in_quad"
+
+# Do a quad-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a quad-out
+# interpolation function.
+#
+# |                        xxxxxxx
+# | x                 xxx**
+# |                xx*
+# |             xx*
+# |          xx*
+# |        xx
+# |      xx
+# |    xx
+# |  xx
+# | x                           t
+# |x______________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_out_quad
+#   ease-out-quad
+ease_out_quad() {
+    awk '{
+      print 1 - (1 - $1) * (1 - $1);
+    }'
+}
+alias ease-out-quad="ease_out_quad"
+
+# Do a quad-in-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a quad-in-out
+# interpolation function.
+#
+# |                          xxxxx
+# | x                     xx*
+# |                     x*
+# |                   x*
+# |                 x*
+# |               x*
+# |             xx
+# |           xx
+# |         xx*
+# |      xx*                    t
+# |xxxx**_________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_out_quad
+#   ease-in-out-quad
+ease_in_out_quad() {
+    awk '{
+      if ($1 < 0.5) {
+        print 2 * $1 * $1;
+      } else {
+        print 1 - ((-2 * $1 + 2) ^ 2) / 2;
+      }
+    }'
+}
+alias ease-in-out-quad="ease_in_out_quad"
+
+# Do a cubic-in interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a cubic-in
+# interpolation function.
+#
+# |
+# | x                            x
+# |                             x
+# |                            x
+# |                          x*
+# |                        xx
+# |                      xx
+# |                    xx
+# |                 xx*
+# |             xxx*            t
+# |xxxxxxxxx****__________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_cubic
+#   ease-in-cubic
+ease_in_cubic() {
+    awk '{
+      print $1 * $1 * $1;
+    }'
+}
+alias ease-in-cubic="ease_in_cubic"
+
+# Do a cubic-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a cubic-out
+# interpolation function.
+#
+# |                    xxxxxxxxxxx
+# | x             xxx**
+# |            xx*
+# |         xx*
+# |       x*
+# |      x
+# |    x*
+# |   x
+# | x*
+# |x                            t
+# |x______________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_out_cubic
+#   ease-out-cubic
+ease_out_cubic() {
+    awk '{
+      print 1 - ((1 - $1) ^ 3);
+    }'
+}
+alias ease-out-cubic="ease_out_cubic"
+
+# Do a cubic-in-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a cubic-in-out
+# interpolation function.
+#
+# |                         xxxxxx
+# | x                   xxx*
+# |                   x*
+# |                 x*
+# |                x
+# |               x
+# |              x
+# |             x
+# |           x*
+# |       xxx*                  t
+# |xxxxx**________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_out_cubic
+#   ease-in-out-cubic
+ease_in_out_cubic() {
+    awk '{
+      if ($1 < 0.5) {
+        print 4 * $1 * $1 * $1;
+      } else {
+        print 1 - ((-2 * $1 + 2) ^ 3) / 2;
+      }
+    }'
+}
+alias ease-in-out-cubic="ease_in_out_cubic"
+
+# Do a quart-in interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a quart-in
+# interpolation function.
+#
+# |
+# | x                            x
+# |                             x
+# |                            x
+# |                           x
+# |                          x
+# |                         x
+# |                       x*
+# |                    xx*
+# |                xxx*         t
+# |xxxxxxxxxxxxxx**_______________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_quart
+#   ease-in-quart
+ease_in_quart() {
+    awk '{
+      print $1 * $1 * $1 * $1;
+    }'
+}
+alias ease-in-quart="ease_in_quart"
+
+# Do a quart-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a quart-out
+# interpolation function.
+#
+# |                 xxxxxxxxxxxxxx
+# | x          xxx**
+# |         xx*
+# |       x*
+# |     xx
+# |    x
+# |   x
+# |  x
+# | x
+# |x                            t
+# |x______________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_out_quart
+#   ease-out-quart
+ease_out_quart() {
+    awk '{
+      print 1 - ((1 - $1) ^ 4);
+    }'
+}
+alias ease-out-quart="ease_out_quart"
+
+# Do a quart-in-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a quart-in-out
+# interpolation function.
+#
+# |                        xxxxxxx
+# | x                  xx**
+# |                  x*
+# |                 x
+# |                x
+# |               x
+# |              x
+# |             x
+# |            x
+# |         xx*                 t
+# |xxxxxxx**______________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_out_quart
+#   ease-in-out-quart
+ease_in_out_quart() {
+    awk '{
+      if ($1 < 0.5) {
+        print 8 * $1 * $1 * $1 * $1;
+      } else {
+        print 1 - ((-2 * $1 + 2) ^ 4) / 2;
+      }
+    }'
+}
+alias ease-in-out-quart="ease_in_out_quart"
+
+# Do a quint-in interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a quint-in
+# interpolation function.
+#
+# |
+# | x                            x
+# |                              x
+# |                             x
+# |                            x
+# |                           x
+# |                          x
+# |                        xx
+# |                      xx
+# |                  xxx*       t
+# |xxxxxxxxxxxxxxxx**_____________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_quint
+#   ease-in-quint
+ease_in_quint() {
+    awk '{
+      print $1 * $1 * $1 * $1 * $1;
+    }'
+}
+alias ease-in-quint="ease_in_quint"
+
+# Do a quint-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a quint-out
+# interpolation function.
+#
+# |              xxxxxxxxxxxxxxxxx
+# | x        xx**
+# |        x*
+# |      x*
+# |    x*
+# |   x
+# |  x
+# | x
+# | x
+# |x                            t
+# |x______________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_out_quint
+#   ease-out-quint
+ease_out_quint() {
+    awk '{
+      print 1 - ((1 - $1) ^ 5);
+    }'
+}
+alias ease-out-quint="ease_out_quint"
+
+# Do a quint-in-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a quint-in-out
+# interpolation function.
+#
+# |                       xxxxxxxx
+# | x                  xx*
+# |                  x*
+# |                 x
+# |                x
+# |               x
+# |               x
+# |              x
+# |            xx
+# |         xxx                 t
+# |xxxxxxx**______________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_out_quint
+#   ease-in-out-quint
+ease_in_out_quint() {
+    awk '{
+      if ($1 < 0.5) {
+        print 16 * $1 * $1 * $1 * $1 * $1;
+      } else {
+        print 1 - ((-2 * $1 + 2) ^ 5) / 2;
+      }
+    }'
+}
+alias ease-in-out-quint="ease_in_out_quint"
+
+# Do an expo-in interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a expo-in
+# interpolation function.
+#
+# |
+# | x                            x
+# |                              x
+# |                             x
+# |                             x
+# |                            x
+# |                           x
+# |                          x
+# |                        x*
+# |                    xxx*     t
+# |xxxxxxxxxxxxxxxx****___________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_expo
+#   ease-in-expo
+ease_in_expo() {
+    awk '{
+      if ($1 == 0) {
+        print 0;
+      } else {
+        print 2 ^ (10 * $1 - 10);
+      }
+    }'
+}
+alias ease-in-expo="ease_in_expo"
+
+# Do an expo-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a expo-out
+# interpolation function.
+#
+# |             xxxxxxxxxxxxxxxxxx
+# | x      xxx**
+# |      xx
+# |     x
+# |   x*
+# |  x
+# |  x
+# | x
+# |x
+# |x                            t
+# |x______________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_out_expo
+#   ease-out-expo
+ease_out_expo() {
+    awk '{
+      if ($1 == 1) {
+        print 1;
+      } else {
+        print 1 - (2 ^ (-10 * $1));
+      }
+    }'
+}
+alias ease-out-expo="ease_out_expo"
+
+# Do an expo-in-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a expo-in-out
+# interpolation function.
+#
+# |                       xxxxxxxx
+# | x                 xxx*
+# |                 x*
+# |                x
+# |               x
+# |               x
+# |               x
+# |              x
+# |             x
+# |          xx*                t
+# |xxxxxxx***_____________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_out_expo
+#   ease-in-out-expo
+ease_in_out_expo() {
+    awk '{
+      if ($1 == 0) {
+        print 0;
+      } else if ($1 == 1) {
+        print 1;
+      } else if ($1 < 0.5) {
+        print (2 ^ (20 * $1 - 10)) / 2;
+      } else {
+        print (2 - (2 ^ (-20 * $1 + 10))) / 2;
+      }
+    }'
+}
+alias ease-in-out-expo="ease_in_out_expo"
+
+# Do a circ-in interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a circ-in
+# interpolation function.
+#
+# |
+# | x
+# |                              x
+# |                              x
+# |                            x*
+# |                          xx
+# |                        xx
+# |                     xxx
+# |                 xxx*
+# |           xxxx**            t
+# |xxxxxxxx***____________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_circ
+#   ease-in-circ
+ease_in_circ() {
+    awk '{
+      print 1 - sqrt(1 - ($1 ^ 2));
+    }'
+}
+alias ease-in-circ="ease_in_circ"
+
+# Do a circ-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a circ-out
+# interpolation function.
+#
+# |                     xxxxxxxxxx
+# | x             xxxx**
+# |           xxx*
+# |        xx*
+# |     xx*
+# |   x*
+# |  x
+# | x
+# |x
+# |x                            t
+# |x______________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_out_circ
+#   ease-out-circ
+ease_out_circ() {
+    awk '{
+      print sqrt(1 - (($1 - 1) ^ 2));
+    }'
+}
+alias ease-out-circ="ease_out_circ"
+
+# Do a circ-in-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a circ-in-out
+# interpolation function.
+#
+# |                       xxxxxxxx
+# | x                 xxx*
+# |                 x*
+# |                x
+# |                x
+# |               x
+# |               x
+# |              x
+# |             x
+# |         xxx*                t
+# |xxxxxxx**______________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_out_circ
+#   ease-in-out-circ
+ease_in_out_circ() {
+    awk '{
+      if ($1 < 0.5) {
+        print (1 - sqrt(1 - ((2 * $1) ^ 2))) / 2;
+      } else {
+        print (sqrt(1 - ((-2 * $1 + 2) ^ 2)) + 1) / 2;
+      }
+    }'
+}
+alias ease-in-out-circ="ease_in_out_circ"
+
+# Do a back-in interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a back-in
+# interpolation function.
+#
+# |
+# | x                            x
+# |                              x
+# |                             x
+# |                            x
+# |                           x
+# |                          x
+# |                         x
+# |                       x*
+# |                      x      t
+# |xxxxx______________xx*_________
+#       **xxxxxxxxxx**
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_back
+#   ease-in-back
+ease_in_back() {
+    awk '
+    BEGIN {
+      c1 = 1.70158;
+      c3 = c1 + 1;
+    }
+    {
+      print c3 * $1 * $1 * $1 - c1 * $1 * $1;
+    }'
+}
+alias ease-in-back="ease_in_back"
+
+# Do a back-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a back-out
+# interpolation function.
+#
+#               xxxxxxxxxxxx
+# |          xx*            *xxxxx
+# | x      x*
+# |       x
+# |     x*
+# |    x
+# |   x
+# |  x
+# |  x
+# | x
+# |x                            t
+# |x______________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_out_back
+#   ease-out-back
+ease_out_back() {
+    awk '
+    BEGIN {
+      c1 = 1.70158;
+      c3 = c1 + 1;
+    }
+    {
+      print 1 + c3 * (($1 - 1) ^ 3) + c1 * (($1 - 1) ^ 2);
+    }'
+}
+alias ease-out-back="ease_out_back"
+
+# Do a back-in-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a back-in-out
+# interpolation function.
+#
+#                       xxxxxxxx
+# |                   x*        *x
+# | x                x
+# |                 x
+# |                x
+# |                x
+# |               x
+# |               x
+# |              x
+# |             x
+# |            x                t
+# |xx________xx___________________
+#    *xxxxxx*
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_out_back
+#   ease-in-out-back
+ease_in_out_back() {
+    awk '
+    BEGIN {
+      c1 = 1.70158;
+      c2 = c1 * 1.525;
+    }
+    {
+      if ($1 < 0.5) {
+        print (((2 * $1) ^ 2) * ((c2 + 1) * 2 * $1 - c2)) / 2;
+      } else {
+        print (((2 * $1 - 2) ^ 2) * ((c2 + 1) * ($1 * 2 - 2) + c2) + 2) / 2;
+      }
+    }'
+}
+alias ease-in-out-back="ease_in_out_back"
+
+# Do an elastic-in interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a elastic-in
+# interpolation function.
+#
+# |
+# | x                            x
+# |                              x
+# |                              x
+# |                              x
+# |                              x
+# |                              x
+# |                             x
+# |                             x
+# |                    xxxx     t
+# |xxxxxxxxxxx***xxxxxx____x____x_
+#                          x   x
+#                           x  x
+#                            x x
+#                             *
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_elastic
+#   ease-in-elastic
+ease_in_elastic() {
+    awk '
+    BEGIN {
+      pi = atan2(0, -1);
+      c4 = (2 * pi) / 3;
+    }
+    {
+      if ($1 == 0) {
+        print 0;
+      } else if ($1 == 1) {
+        print 1;
+      } else {
+        print -(2 ^ (10 * $1 - 10)) * sin(($1 * 10 - 10.75) * c4);
+      }
+    }'
+}
+alias ease-in-elastic="ease_in_elastic"
+
+# Do an elastic-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a elastic-out
+# interpolation function.
+#
+#     *
+#    x x
+#    x  x
+#   x    x
+# | x    x    x***xxxxxxxxxxxxxxxx
+# | x     xxx
+# | x
+# | x
+# |x
+# |x
+# |x
+# |x
+# |x
+# |x                            t
+# |x______________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_out_elastic
+#   ease-out-elastic
+ease_out_elastic() {
+    awk '
+    BEGIN {
+      pi = atan2(0, -1);
+      c4 = (2 * pi) / 3;
+    }
+    {
+      if ($1 == 0) {
+        print 0;
+      } else if ($1 == 1) {
+        print 1;
+      } else {
+        print (2 ^ (-10 * $1)) * sin(($1 * 10 - 0.75) * c4) + 1;
+      }
+    }'
+}
+alias ease-out-elastic="ease_out_elastic"
+
+# Do an elastic-in-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a elastic-in-out
+# interpolation function.
+#
+#                   xxx
+# |                x   x**xxxxxxxx
+# | x              x
+# |                x
+# |               x
+# |               x
+# |               x
+# |              x
+# |              x
+# |              x
+# |             x               t
+# |xxxxxxx**x___x_________________
+#            xxx
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_out_elastic
+#   ease-in-out-elastic
+ease_in_out_elastic() {
+    awk '
+    BEGIN {
+      pi = atan2(0, -1);
+      c5 = (2 * pi) / 4.5;
+    }
+    {
+      if ($1 == 0) {
+        print 0;
+      } else if ($1 == 1) {
+        print 1;
+      } else if ($1 < 0.5) {
+        print -((2 ^ (20 * $1 - 10)) * sin((20 * $1 - 11.125) * c5)) / 2;
+      } else {
+        print ((2 ^ (-20 * $1 + 10)) * sin((20 * $1 - 11.125) * c5)) / 2 + 1;
+      }
+    }'
+}
+alias ease-in-out-elastic="ease_in_out_elastic"
+
+# Do a bounce-in interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a bounce-in
+# interpolation function.
+#
+# |                             xx
+# | x                         xx
+# |                          x
+# |                         x
+# |                        x
+# |                       x
+# |                      x
+# |                     x
+# |           xx**xx   x
+# |         x*      *x x        t
+# |**x****xx__________x___________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_bounce
+#   ease-in-bounce
+ease_in_bounce() {
+    awk '{ print 1 - $1 }' | ease_out_bounce | awk '{ print 1 - $1 }'
+}
+alias ease-in-bounce="ease_in_bounce"
+
+# Do a bounce-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a bounce-out
+# interpolation function.
+#
+# |           *          **   **x*
+# | x        x x        x  ***
+# |         x   x*    *x
+# |         x     ****
+# |        x
+# |       x
+# |      x
+# |     x
+# |    x
+# |   x                         t
+# |xx*____________________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_out_bounce
+#   ease-out-bounce
+ease_out_bounce() {
+    awk '
+    BEGIN {
+      n1 = 7.5625;
+      d1 = 2.75;
+    }
+    {
+      if ($1 < (1 / d1)) {
+        print n1 * $1 * $1;
+      } else if ($1 < (2 / d1)) {
+        x = $1 - 1.5 / d1;
+        print n1 * x * x + 0.75;
+      } else if ($1 < (2.5 / d1)) {
+        x = $1 - 2.25 / d1;
+        print n1 * x * x + 0.9375;
+      } else {
+        x = $1 - 2.625 / d1;
+        print n1 * x * x + 0.984375;
+      }
+    }'
+}
+alias ease-out-bounce="ease_out_bounce"
+
+# Do a bounce-in-out interpolation
+#
+# Transform normalized decimals (from 0 to 1) from stdin with a bounce-in-out
+# interpolation function.
+#
+# |                     *    **x**
+# | x                  x x**x
+# |                   x
+# |                   x
+# |                 x*
+# |              xxx
+# |            x*
+# |           x
+# |           x
+# |     ***  x                  t
+# |x**x*___*x_____________________
+#
+# Please note that some interpolation functions may interpolate to values
+# outside of [0-1] to create fancy effects.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Lines containing a single decimal between 0 and 1.
+#
+# stdout:
+#   Lines containing a single interpolated decimal near 0 and 1.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   ease_in_out_bounce
+#   ease-in-out-bounce
+ease_in_out_bounce() {
+    mkfifo /tmp/__shease__bounce
+    tee /tmp/__shease__bounce | awk '{
+      if ($1 < 0.5) {
+        print 1 - (2 * $1);
+      } else {
+        print (2 * $1) - 1;
+      }
+    }' | ease_out_bounce | paste - /tmp/__shease__bounce | awk '{
+      if ($2 < 0.5) {
+        print (1 - $1) / 2;
+      } else {
+        print (1 + $1) / 2;
+      }
+    }'
+    rm /tmp/__shease__bounce
+}
+alias ease-in-out-bounce="ease_in_out_bounce"
+
+# Helper function to animate a dot
+__shease__dot() {
+    while read -r position
+    do
+        printf "\e[32;1m>>> \e[33;0m%s\e[32;1m <<<\n" "${func}"
+        printf "%*c\e[34m○\e[0m%*c\0" $(($1 + position)) " " $(($2 - $1 - position - 1)) " "
+    done
+}
+
+# Show a demo of all easing functions
+#
+# This command visualizes all available easing functions.
+#
+# Parameters:
+#   Ignored.
+#
+# stdin:
+#   Ignored.
+#
+# stdout:
+#   The animations.
+#
+# stderr:
+#   Nothing.
+#
+# Return codes:
+#   None.
+#
+# Aliases:
+#   shease_demo
+#   shease-demo
+shease_demo() {
+    easing_functions="ease_linear
+ease_in_out_sine
+ease_in_out_quad
+ease_in_out_cubic
+ease_in_out_quart
+ease_in_out_quint
+ease_in_out_expo
+ease_in_out_circ
+ease_in_out_back
+ease_in_out_elastic
+ease_in_out_bounce
+"
+
+    terminal_width="$(tput cols)"
+    width=$((terminal_width * 6 / 10))
+    padding=$((terminal_width * 2 / 10))
+    length="$(printf "%s" "${easing_functions}" | wc -l)"
+    height=$((length * 2))
+
+    for func in ${easing_functions}
+    do
+        rm -f "/tmp/__shease__${func}"
+        nseq 0.03 | "${func}" | iscale 0 "${width}" | \
+            __shease__dot "${padding}" "${terminal_width}" \
+                          > "/tmp/__shease__${func}"
+        echo "/tmp/__shease__${func}"
+    done | xargs paste -z -d '\n' | \
+        xargs -I{} -0 sh -c "printf '%b\n\e[%sA' \"{}\" \"${height}\" && sleep 0.017"
+
+    printf "\e[%sB" "${height}"
+
+    for func in ${easing_functions}
+    do
+        rm "/tmp/__shease__${func}"
+    done
+}
+alias shease-demo="shease_demo"

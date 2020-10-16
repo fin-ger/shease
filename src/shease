@@ -1,0 +1,230 @@
+#!/bin/sh
+
+# saner programming env: these switches turn some bugs into errors
+set -o errexit -o nounset
+
+# Helper function to print to stderr.
+eprintf() {
+    # shellcheck disable=2059
+    printf "$@" >&2
+}
+
+GETOPT_SUCCESS=1
+if getopt --test > /dev/null
+then
+    GETOPT_SUCCESS=0
+else
+    if [ $? -ne 4 ]
+    then
+        GETOPT_SUCCESS=0
+    fi
+fi
+
+if [ "${GETOPT_SUCCESS}" -eq 0 ]
+then
+    eprintf "$0: I'm sorry, \`getopt --test\` failed in this environment.\n"
+    exit 1
+fi
+
+SHEASE_VERSION=v0.0.0
+SHEASE_PREFIX=/usr
+SHEASE_RC="${SHEASE_PREFIX}/share/shease/shease.rc"
+
+help() {
+    eprintf "$1 - ${SHORT_DESCRIPTION}
+
+${LONG_DESCRIPTION}
+
+Available options:
+  -v, --version     print version and exit
+  -h, --help        show this message
+${COMMANDS}
+Copyright (c) 2020 - Fin Christensen
+"
+}
+
+print_version() {
+    echo "${SHEASE_VERSION}"
+}
+
+get_available_commands() {
+    grep -Pzo '\n(?!__shease__.+).+\(\) \{\n' "${SHEASE_RC}" | \
+        sed '1~2d' | \
+        grep -Po '[a-zA-Z0-9_]+'
+}
+
+get_short_description_for_command() {
+    grep -Pzo '(#.*\n)+'"$1"'\(\) \{\n' "${SHEASE_RC}" | \
+        head -n 1 | \
+        cut -c3-
+}
+
+get_long_description_for_command() {
+    grep -Pzo '(#.*\n)+'"$1"'\(\) \{\n' "${SHEASE_RC}" | \
+        head -n -2 | \
+        tail -n +3 | \
+        cut -c3-
+}
+
+help_commands_section() {
+    printf "\nAvailable commands:\n"
+    for command in $(get_available_commands)
+    do
+        printf '  %-20s  %s\n' "$(echo "${command}" | tr _ -)" "$(get_short_description_for_command "${command}")"
+    done
+    printf "\n  Use '%s [command] --help' to get specific help for that command.\n " "$0"
+}
+
+shease_help() {
+    SHORT_DESCRIPTION="A command for creating interpolated number sequences"
+    LONG_DESCRIPTION=$(cat <<EOF
+Synopsis:
+  $0 {-h,v} [command] [parameters...]
+
+Shease creates number sequences which can be interpolated with a set of easing
+functions.
+
+The common workflow is to
+ 1. create a normalized decimal sequence with 'nseq'
+ 2. interpolate this sequence with an easing function
+ 3. scale the normalized decimals to your desired numbers
+
+Example:
+  $0 nseq 0.01 | $0 ease-in-out-quad | $0 iscale 0 100
+EOF
+                    )
+    COMMANDS="$(help_commands_section)"
+
+    help "$0"
+}
+
+command_help() {
+    command="$(echo "$1" | tr - _)"
+
+    # check if command exists
+    if ! get_available_commands | grep -xq "${command}"
+    then
+        eprintf "$0: Command '$1' does not exist!\n"
+        eprintf "To get a list of all available commands run '$0 --help'.\n"
+        exit 5
+    fi
+
+    SHORT_DESCRIPTION="$(get_short_description_for_command "${command}")"
+    LONG_DESCRIPTION="$(get_long_description_for_command "${command}")"
+    COMMANDS=""
+
+    help "$1"
+}
+
+run_command() {
+    # shellcheck source=shease.rc
+    . "${SHEASE_RC}"
+
+    orig="$1"
+    command="$(echo "$1" | tr - _)"
+    shift
+
+    # check if command exists
+    if ! get_available_commands | grep -xq "${command}"
+    then
+        eprintf "$0: Command '${orig}' does not exist!\n"
+        eprintf "To get a list of all available commands run '$0 --help'.\n"
+        exit 5
+    fi
+
+    if "${command}" "$@"
+    then
+        true
+    else
+        eprintf "${orig}: Parameter $? is missing!\n"
+        eprintf "Run '${orig} --help' for more information.\n"
+        exit 6
+    fi
+}
+
+main() {
+    # if file is a link to shease script, run the command with the same name
+    # as the link name
+    if [ "$(basename "$0")" != shease ]
+    then
+        eval set -- "$(basename "$0")" "$@"
+    fi
+
+    OPTIONS="hv"
+    LONGOPTS="help,version"
+
+    if ! PARSED="$(getopt \
+           --shell sh \
+           --options="${OPTIONS}" \
+           --longoptions="${LONGOPTS}" \
+           --name "$0" \
+           -- "$@")"
+    then
+        # e.g. return value is 1
+        #  then getopt has complained about wrong arguments to stdout
+        exit 2
+    fi
+
+    # read getopt's output this way to handle the quoting right:
+    eval set -- "${PARSED}"
+
+    # now enjoy the options in order and nicely split until we see --
+    action=""
+    while true; do
+        case "$1" in
+            -h|--help)
+                action="help"
+                shift
+                ;;
+            -v|--version)
+                action="version"
+                shift
+                ;;
+            --)
+                shift
+                break
+                ;;
+            *)
+                eprintf "$0: Programming error!\n"
+                exit 3
+                ;;
+        esac
+    done
+
+    # is a command provided in the positional args?
+    if [ -z "${1:-}" ]
+    then
+        case "${action}" in
+            help)
+                shease_help
+                exit
+                ;;
+            version)
+                print_version
+                exit
+                ;;
+            *)
+                eprintf "$0: Please provide a command to be executed!\n"
+                eprintf "Run '$0 --help' for more information.\n"
+                exit 4
+                ;;
+        esac
+    else
+        case "${action}" in
+            help)
+                command_help "$1"
+                exit
+                ;;
+            version)
+                print_version
+                exit
+                ;;
+            *)
+                run_command "$@"
+                exit $?
+                ;;
+        esac
+    fi
+}
+
+main "$@"
