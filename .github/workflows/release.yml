@@ -36,7 +36,7 @@ jobs:
     - name: Release Shease Tarball
       id: shease-tgz
       run: |
-        VERSION=0.1.0
+        VERSION=v0.1.0
         echo "::set-output name=version::$VERSION"
         make package
         cp "package/shease-${VERSION}.zip" "${GITHUB_WORKSPACE}/shease-${VERSION}.tgz"

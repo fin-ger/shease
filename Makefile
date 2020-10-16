@@ -1,5 +1,5 @@
 PREFIX ?= /usr
-VERSION=v0.0.0
+VERSION=v0.1.0
 
 .PHONY: check build package clean install uninstall release dev-install dev-uninstall
 
@@ -12,7 +12,7 @@ build: check
 	@cp -a src/shease.rc build/share/shease
 	@sed -i \
 		-e "s;SHEASE_PREFIX=.*;SHEASE_PREFIX=\"$(PREFIX)\";g" \
-		-e "s;SHEASE_VERSION=.*;SHEASE_VERSION=\"$(VERSION)\";g" \
+		-e "s;SHEASE_VERSION=v0.1.0
 		build/bin/shease
 	@grep -Pzo '\n(?!__shease__.+).+\(\) \{\n' src/shease.rc | \
 		sed '1~2d' | \
