@@ -24,7 +24,8 @@
 
 ---
 
-
+Shease creates number sequences which can be interpolated with a set of easing
+functions.
 
 ## How does it look like?
 
@@ -33,11 +34,48 @@
   <img src="assets/demo.gif" alt="shease demo">
 </details>
 
+## Installation
+
+The easiest way to install Shease is to clone this repository and use Make to install it to your local user:
+
+```
+$ git clone https://github.com/fin-ger/shease.git
+$ cd shease
+$ PREFIX=~/.local make install
+```
+
+As an alternative you can download a pre-packaged tarball from the releases section with `/usr` configured as the installation prefix. Extract this tarball to `/usr` and your good to go!
+
+```
+$ cd /usr
+$ tar xf /path/to/shease-0.1.0.tgz
+```
+
+> Note: The pre-packaged tarball only works with the `/usr` installation prefix. If you prefer a different location, build your own tarball or use the Make installation from above.
+
 ## Usage
+
+Shease can be used in 2 different ways: as a sourcable shell script library or as a command-line application.
 
 ### Tool
 
+When successfully installed, you can type
+
+```
+$ shease --help
+```
+
+to get a detailed explanation on what easing functions are available and how to use them.
+
+To launch the demo, run
+
+```
+$ shease-demo
+```
+
 ### Library
+
+You can use all Shease functions by simply sourcing `src/shease.rc`. Look into the source code to find documentation on how to use each function.
 
 ## Troubleshooting
 
@@ -45,9 +83,24 @@ If you find any bugs/unexpected behaviour or you have a proposition for future c
 
 ## Development
 
-### Basic Workflow
+The development of Shease is centered around the Makefile. The basic workflow consist of applying some changes to the code and running
+
+```
+$ make dev-install
+$ shease my-command ...
+```
+
+to test your changes.
 
 ### Creating a Release
+
+A Shease release can be created by running
+
+```
+$ make release
+```
+
+Follow the instructions to finish the release.
 
 ## Authors
 
